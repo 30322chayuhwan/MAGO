@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카지노 룰렛</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            gap: 40px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .left-panel, .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .wheel-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        #wheel {
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            border: 5px solid #d4af37;
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+        }
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid white;
+            z-index: 10;
+        }
+        button {
+            padding: 10px 40px;
+            font-size: 18px;
+            background-color: #d4af37;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #b5952f;
+        }
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        .info-box {
+            margin-top: 20px;
+            width: 100%;
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: 50px repeat(12, 1fr);
+            grid-template-rows: repeat(3, 50px);
+            gap: 2px;
+            width: 100%;
+            background: #fff;
+            border: 2px solid #fff;
+        }
+        .outside-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+            width: 100%;
+            margin-top: 2px;
+            background: #fff;
+            border: 2px solid #fff;
+            border-top: none;
+        }
+        .cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+        .cell:hover {
+            opacity: 0.8;
+        }
+        .cell.selected {
+            border: 3px solid #00ffff;
+            box-sizing: border-box;
+            z-index: 2;
+        }
+        .green { background-color: #008000; color: white; }
+        .red { background-color: #d90000; color: white; }
+        .black { background-color: #000000; color: white; }
+        
+        .zero-cell {
+            grid-row: 1 / 4;
+            grid-column: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="left-panel">
+        <div class="wheel-box">
+            <div class="pointer"></div>
+            <canvas id="wheel" width="400" height="400"></canvas>
+        </div>
+        <button id="spin-btn">스핀</button>
+        
+        <div class="info-box">
+            <h3 style="margin:0 0 10px 0;">결과</h3>
+            <div id="result-display" style="font-size: 24px; font-weight: bold;">-</div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="board" id="board">
+            </div>
+        <div class="outside-board">
+            <div class="cell red" data-bet="red" style="height: 50px;">Red</div>
+            <div class="cell black" data-bet="black" style="height: 50px;">Black</div>
+            <div class="cell green" data-bet="even" style="height: 50px;">짝수 (Even)</div>
+            <div class="cell green" data-bet="odd" style="height: 50px;">홀수 (Odd)</div>
+        </div>
+
+        <div class="info-box">
+            <h3 style="margin:0 0 10px 0;">맞춘 배팅</h3>
+            <div id="win-display">-</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const sequence = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+    const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+    
+    let selectedBets = new Set();
+    let totalRotation = 0;
+    let isSpinning = false;
+
+    // 1. 배팅 보드(족보) 렌더링
+    function initBoard() {
+        const board = document.getElementById('board');
+        
+        // 0 배팅 구역
+        const zero = document.createElement('div');
+        zero.className = 'cell green zero-cell';
+        zero.textContent = '0';
+        zero.dataset.bet = '0';
+        zero.addEventListener('click', toggleBet);
+        board.appendChild(zero);
+
+        // 1~36 숫자 배치 (3행 12열 구조)
+        const rows = [
+            [3,6,9,12,15,18,21,24,27,30,33,36],
+            [2,5,8,11,14,17,20,23,26,29,32,35],
+            [1,4,7,10,13,16,19,22,25,28,31,34]
+        ];
+
+        rows.forEach((row, rowIndex) => {
+            row.forEach((num, colIndex) => {
+                const cell = document.createElement('div');
+                const isRed = redNumbers.includes(num);
+                cell.className = `cell ${isRed ? 'red' : 'black'}`;
+                cell.textContent = num;
+                cell.dataset.bet = num.toString();
+                cell.style.gridRow = rowIndex + 1;
+                cell.style.gridColumn = colIndex + 2;
+                cell.addEventListener('click', toggleBet);
+                board.appendChild(cell);
+            });
+        });
+
+        // 아웃사이드 배팅 이벤트 연결
+        document.querySelectorAll('.outside-board .cell').forEach(cell => {
+            cell.addEventListener('click', toggleBet);
+        });
+    }
+
+    // 2. 배팅 선택/해제 로직
+    function toggleBet(e) {
+        if (isSpinning) return;
+        const cell = e.target;
+        const betValue = cell.dataset.bet;
+
+        if (selectedBets.has(betValue)) {
+            selectedBets.delete(betValue);
+            cell.classList.remove('selected');
+        } else {
+            selectedBets.add(betValue);
+            cell.classList.add('selected');
+        }
+    }
+
+    // 3. 룰렛 휠 렌더링
+    function drawWheel() {
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const radius = canvas.width / 2;
+        const arc = 2 * Math.PI / sequence.length;
+
+        ctx.translate(radius, radius);
+
+        for (let i = 0; i < sequence.length; i++) {
+            const num = sequence[i];
+            const angle = i * arc;
+            
+            // 색상 결정
+            if (num === 0) ctx.fillStyle = '#008000';
+            else if (redNumbers.includes(num)) ctx.fillStyle = '#d90000';
+            else ctx.fillStyle = '#000000';
+
+            // 조각 그리기 (포인터가 0도를 향하므로, -90도(상단)에서 시작하도록 보정)
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, radius, angle - arc/2 - Math.PI/2, angle + arc/2 - Math.PI/2);
+            ctx.fill();
+
+            // 텍스트 그리기
+            ctx.save();
+            ctx.fillStyle = "white";
+            ctx.font = "bold 16px sans-serif";
+            ctx.rotate(angle - Math.PI/2);
+            ctx.textAlign = "right";
+            ctx.fillText(num, radius - 15, 6);
+            ctx.restore();
+        }
+    }
+
+    // 4. 스핀 로직
+    document.getElementById('spin-btn').addEventListener('click', () => {
+        if (isSpinning) return;
+        isSpinning = true;
+        document.getElementById('spin-btn').disabled = true;
+        document.getElementById('result-display').textContent = '회전 중...';
+        document.getElementById('win-display').textContent = '-';
+
+        // 당첨 인덱스 무작위 선택
+        const winIndex = Math.floor(Math.random() * sequence.length);
+        const sliceAngle = 360 / sequence.length;
+        
+        // 당첨 숫자가 상단(0도)에 오도록 각도 계산
+        const targetDegree = 360 - (winIndex * sliceAngle);
+        const currentMod = totalRotation % 360;
+        let degreeToMove = (targetDegree - currentMod + 360) % 360;
+        
+        // 최소 5바퀴 이상 돌도록 설정
+        totalRotation += degreeToMove + (360 * 5);
+        
+        const canvas = document.getElementById('wheel');
+        canvas.style.transform = `rotate(${totalRotation}deg)`;
+
+        // 회전 종료 후 결과 처리 (CSS transition 시간 4초)
+        setTimeout(() => {
+            checkResult(sequence[winIndex]);
+            isSpinning = false;
+            document.getElementById('spin-btn').disabled = false;
+        }, 4000);
+    });
+
+    // 5. 결과 판독
+    function checkResult(winNumber) {
+        const isRed = redNumbers.includes(winNumber);
+        const colorText = winNumber === 0 ? "Green" : (isRed ? "Red" : "Black");
+        
+        document.getElementById('result-display').textContent = `${winNumber} (${colorText})`;
+        
+        let matched = [];
+        
+        selectedBets.forEach(bet => {
+            if (!isNaN(bet)) { // 숫자 배팅
+                if (parseInt(bet) === winNumber) matched.push(`숫자 ${bet}`);
+            } else { // 아웃사이드 배팅
+                if (winNumber !== 0) {
+                    if (bet === 'red' && isRed) matched.push("Red");
+                    if (bet === 'black' && !isRed) matched.push("Black");
+                    if (bet === 'even' && winNumber % 2 === 0) matched.push("짝수 (Even)");
+                    if (bet === 'odd' && winNumber % 2 !== 0) matched.push("홀수 (Odd)");
+                }
+            }
+        });
+
+        const winDisplay = document.getElementById('win-display');
+        if (matched.length > 0) {
+            winDisplay.textContent = matched.join(', ') + ' 적중!';
+            winDisplay.style.color = '#00ff00';
+        } else {
+            winDisplay.textContent = '맞춘 배팅이 없습니다.';
+            winDisplay.style.color = '#ffffff';
+        }
+    }
+
+    // 초기화
+    initBoard();
+    drawWheel();
+</script>
+</body>
+</html>
