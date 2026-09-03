@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>카지노 룰렛</title>
+    <title>Roulette</title>
     <style>
         body {
             font-family: sans-serif;
-            background-color: #1a1a1a;
-            color: #ffffff;
+            background-color: #ffffff;
+            color: #000000;
             margin: 0;
             padding: 20px;
             display: flex;
@@ -30,104 +30,103 @@
         }
         .wheel-box {
             position: relative;
+            width: 400px;
+            height: 400px;
             margin-bottom: 20px;
         }
         #wheel {
-            width: 400px;
-            height: 400px;
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
-            border: 5px solid #d4af37;
-            transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+            transition: transform 5s cubic-bezier(0.25, 0.1, 0.2, 1);
         }
-        .pointer {
+        #ball-container {
             position: absolute;
-            top: -15px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            transition: transform 5s cubic-bezier(0.25, 0.1, 0.2, 1);
+        }
+        #ball {
+            position: absolute;
+            top: 15px; /* 바깥 트랙 위치 */
             left: 50%;
             transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 30px solid white;
-            z-index: 10;
+            width: 14px;
+            height: 14px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0,0,0,0.6);
         }
         button {
-            padding: 10px 40px;
+            padding: 12px 50px;
             font-size: 18px;
-            background-color: #d4af37;
-            color: #000;
+            background-color: #333;
+            color: #fff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
         }
-        button:hover {
-            background-color: #b5952f;
-        }
-        button:disabled {
-            background-color: #555;
-            cursor: not-allowed;
-        }
+        button:hover { background-color: #555; }
+        button:disabled { background-color: #999; cursor: not-allowed; }
+        
         .info-box {
             margin-top: 20px;
             width: 100%;
-            background: #333;
+            background: #f0f0f0;
             padding: 15px;
             border-radius: 5px;
             text-align: center;
+            border: 1px solid #ddd;
         }
+        
+        /* 족보 (배팅 보드) 스타일 */
         .board {
             display: grid;
-            grid-template-columns: 50px repeat(12, 1fr);
-            grid-template-rows: repeat(3, 50px);
+            grid-template-columns: 50px repeat(12, 1fr) 60px;
+            grid-template-rows: repeat(5, 45px);
             gap: 2px;
             width: 100%;
-            background: #fff;
-            border: 2px solid #fff;
-        }
-        .outside-board {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2px;
-            width: 100%;
-            margin-top: 2px;
-            background: #fff;
-            border: 2px solid #fff;
-            border-top: none;
+            background: #ccc;
+            border: 2px solid #ccc;
         }
         .cell {
+            background: #fff;
             display: flex;
             justify-content: center;
             align-items: center;
             font-weight: bold;
+            font-size: 14px;
             cursor: pointer;
             user-select: none;
-        }
-        .cell:hover {
-            opacity: 0.8;
-        }
-        .cell.selected {
-            border: 3px solid #00ffff;
             box-sizing: border-box;
+        }
+        .cell:hover { opacity: 0.85; }
+        .cell.selected {
+            box-shadow: inset 0 0 0 4px #0055ff;
             z-index: 2;
         }
-        .green { background-color: #008000; color: white; }
-        .red { background-color: #d90000; color: white; }
-        .black { background-color: #000000; color: white; }
         
-        .zero-cell {
-            grid-row: 1 / 4;
-            grid-column: 1;
-        }
+        /* 색상 클래스 */
+        .red { background-color: #d90000; color: white; }
+        .black { background-color: #222222; color: white; }
+        .green { background-color: #008000; color: white; }
+        .special { background-color: #eaeaea; color: #333; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- 왼쪽: 룰렛 화면 -->
     <div class="left-panel">
         <div class="wheel-box">
-            <div class="pointer"></div>
             <canvas id="wheel" width="400" height="400"></canvas>
+            <div id="ball-container">
+                <div id="ball"></div>
+            </div>
         </div>
         <button id="spin-btn">스핀</button>
         
@@ -137,19 +136,15 @@
         </div>
     </div>
 
+    <!-- 오른쪽: 족보 화면 -->
     <div class="right-panel">
         <div class="board" id="board">
-            </div>
-        <div class="outside-board">
-            <div class="cell red" data-bet="red" style="height: 50px;">Red</div>
-            <div class="cell black" data-bet="black" style="height: 50px;">Black</div>
-            <div class="cell green" data-bet="even" style="height: 50px;">짝수 (Even)</div>
-            <div class="cell green" data-bet="odd" style="height: 50px;">홀수 (Odd)</div>
+            <!-- 자바스크립트로 족보 생성 -->
         </div>
 
         <div class="info-box">
             <h3 style="margin:0 0 10px 0;">맞춘 배팅</h3>
-            <div id="win-display">-</div>
+            <div id="win-display" style="font-weight: bold;">-</div>
         </div>
     </div>
 </div>
@@ -159,49 +154,59 @@
     const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
     
     let selectedBets = new Set();
-    let totalRotation = 0;
+    let totalWheelRotation = 0;
     let isSpinning = false;
 
-    // 1. 배팅 보드(족보) 렌더링
+    // 1. 배팅 보드 생성
     function initBoard() {
         const board = document.getElementById('board');
         
-        // 0 배팅 구역
-        const zero = document.createElement('div');
-        zero.className = 'cell green zero-cell';
-        zero.textContent = '0';
-        zero.dataset.bet = '0';
-        zero.addEventListener('click', toggleBet);
-        board.appendChild(zero);
+        function createCell(text, betValue, gridArea, colorClass) {
+            const cell = document.createElement('div');
+            cell.className = `cell ${colorClass}`;
+            cell.style.gridArea = gridArea;
+            cell.textContent = text;
+            cell.dataset.bet = betValue;
+            cell.addEventListener('click', toggleBet);
+            board.appendChild(cell);
+        }
 
-        // 1~36 숫자 배치 (3행 12열 구조)
+        // 0 구역 (왼쪽 합치기)
+        createCell('0', '0', '1 / 1 / 4 / 2', 'green');
+
+        // 1~36 숫자 구역
         const rows = [
             [3,6,9,12,15,18,21,24,27,30,33,36],
             [2,5,8,11,14,17,20,23,26,29,32,35],
             [1,4,7,10,13,16,19,22,25,28,31,34]
         ];
-
         rows.forEach((row, rowIndex) => {
             row.forEach((num, colIndex) => {
-                const cell = document.createElement('div');
-                const isRed = redNumbers.includes(num);
-                cell.className = `cell ${isRed ? 'red' : 'black'}`;
-                cell.textContent = num;
-                cell.dataset.bet = num.toString();
-                cell.style.gridRow = rowIndex + 1;
-                cell.style.gridColumn = colIndex + 2;
-                cell.addEventListener('click', toggleBet);
-                board.appendChild(cell);
+                const color = redNumbers.includes(num) ? 'red' : 'black';
+                createCell(num, num.toString(), `${rowIndex + 1} / ${colIndex + 2} / ${rowIndex + 2} / ${colIndex + 3}`, color);
             });
         });
 
-        // 아웃사이드 배팅 이벤트 연결
-        document.querySelectorAll('.outside-board .cell').forEach(cell => {
-            cell.addEventListener('click', toggleBet);
-        });
+        // 2 to 1 (오른쪽 Columns)
+        createCell('2 to 1', 'col3', '1 / 14 / 2 / 15', 'special'); // 3, 6, 9...
+        createCell('2 to 1', 'col2', '2 / 14 / 3 / 15', 'special'); // 2, 5, 8...
+        createCell('2 to 1', 'col1', '3 / 14 / 4 / 15', 'special'); // 1, 4, 7...
+
+        // Dozens (1~12, 13~24, 25~36)
+        createCell('1st 12', '1st12', '4 / 2 / 5 / 6', 'special');
+        createCell('2nd 12', '2nd12', '4 / 6 / 5 / 10', 'special');
+        createCell('3rd 12', '3rd12', '4 / 10 / 5 / 14', 'special');
+
+        // 하단 배팅
+        createCell('1 to 18', '1-18', '5 / 2 / 6 / 4', 'special');
+        createCell('Even', 'even', '5 / 4 / 6 / 6', 'special');
+        createCell('Red', 'red', '5 / 6 / 6 / 8', 'red');
+        createCell('Black', 'black', '5 / 8 / 6 / 10', 'black');
+        createCell('Odd', 'odd', '5 / 10 / 6 / 12', 'special');
+        createCell('19 to 36', '19-36', '5 / 12 / 6 / 14', 'special');
     }
 
-    // 2. 배팅 선택/해제 로직
+    // 2. 배팅 선택 로직
     function toggleBet(e) {
         if (isSpinning) return;
         const cell = e.target;
@@ -216,70 +221,105 @@
         }
     }
 
-    // 3. 룰렛 휠 렌더링
+    // 3. 룰렛 휠 디자인 그리기
     function drawWheel() {
         const canvas = document.getElementById('wheel');
         const ctx = canvas.getContext('2d');
-        const radius = canvas.width / 2;
+        const center = canvas.width / 2;
         const arc = 2 * Math.PI / sequence.length;
 
-        ctx.translate(radius, radius);
+        ctx.translate(center, center);
 
+        // 바깥 공 굴러가는 트랙 (회색)
+        ctx.beginPath();
+        ctx.arc(0, 0, 195, 0, Math.PI * 2);
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fill();
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = '#cccccc';
+        ctx.stroke();
+
+        // 룰렛 칸 그리기
         for (let i = 0; i < sequence.length; i++) {
             const num = sequence[i];
             const angle = i * arc;
             
-            // 색상 결정
             if (num === 0) ctx.fillStyle = '#008000';
             else if (redNumbers.includes(num)) ctx.fillStyle = '#d90000';
-            else ctx.fillStyle = '#000000';
+            else ctx.fillStyle = '#222222';
 
-            // 조각 그리기 (포인터가 0도를 향하므로, -90도(상단)에서 시작하도록 보정)
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.arc(0, 0, radius, angle - arc/2 - Math.PI/2, angle + arc/2 - Math.PI/2);
+            ctx.arc(0, 0, 170, angle - arc/2 - Math.PI/2, angle + arc/2 - Math.PI/2);
             ctx.fill();
 
-            // 텍스트 그리기
+            // 숫자 텍스트
             ctx.save();
             ctx.fillStyle = "white";
             ctx.font = "bold 16px sans-serif";
             ctx.rotate(angle - Math.PI/2);
             ctx.textAlign = "right";
-            ctx.fillText(num, radius - 15, 6);
+            ctx.fillText(num, 155, 6);
             ctx.restore();
         }
+
+        // 중앙 기둥 장식
+        ctx.beginPath();
+        ctx.arc(0, 0, 70, 0, Math.PI * 2);
+        ctx.fillStyle = '#dddddd';
+        ctx.fill();
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#aaaaaa';
+        ctx.stroke();
     }
 
-    // 4. 스핀 로직
+    // 4. 스핀 및 공 굴리기 로직
     document.getElementById('spin-btn').addEventListener('click', () => {
         if (isSpinning) return;
         isSpinning = true;
         document.getElementById('spin-btn').disabled = true;
         document.getElementById('result-display').textContent = '회전 중...';
         document.getElementById('win-display').textContent = '-';
+        document.getElementById('win-display').style.color = '#000';
 
-        // 당첨 인덱스 무작위 선택
+        const wheel = document.getElementById('wheel');
+        const ballContainer = document.getElementById('ball-container');
+        const ball = document.getElementById('ball');
+
+        // 공 위치 초기화 (바깥 트랙)
+        ball.style.transition = 'none';
+        ball.style.top = '15px'; 
+        ball.offsetHeight; // Reflow 강제 실행
+
+        // 당첨 결과 계산
         const winIndex = Math.floor(Math.random() * sequence.length);
-        const sliceAngle = 360 / sequence.length;
+        const winNumber = sequence[winIndex];
         
-        // 당첨 숫자가 상단(0도)에 오도록 각도 계산
-        const targetDegree = 360 - (winIndex * sliceAngle);
-        const currentMod = totalRotation % 360;
-        let degreeToMove = (targetDegree - currentMod + 360) % 360;
+        // 휠은 시계 방향으로 5바퀴 + 랜덤 회전
+        const spinDegree = (360 * 5) + Math.floor(Math.random() * 360);
+        totalWheelRotation += spinDegree;
         
-        // 최소 5바퀴 이상 돌도록 설정
-        totalRotation += degreeToMove + (360 * 5);
-        
-        const canvas = document.getElementById('wheel');
-        canvas.style.transform = `rotate(${totalRotation}deg)`;
+        // 공은 휠과 반대로 회전하며 정확한 당첨 칸에 안착하도록 각도 계산
+        const pocketAngle = winIndex * (360 / sequence.length);
+        // 휠의 최종 각도에 당첨 칸의 각도를 더한 후, 반대 방향으로 여러 바퀴(-360 * 8) 돌게 설정
+        const finalBallRotation = totalWheelRotation + pocketAngle - (360 * 8);
 
-        // 회전 종료 후 결과 처리 (CSS transition 시간 4초)
+        // 애니메이션 시작
+        wheel.style.transform = `rotate(${totalWheelRotation}deg)`;
+        ballContainer.style.transform = `rotate(${finalBallRotation}deg)`;
+        
+        // 공이 안쪽 홈으로 떨어지는 애니메이션 (스핀이 끝나기 1.5초 전에 실행)
         setTimeout(() => {
-            checkResult(sequence[winIndex]);
+            ball.style.transition = 'top 1.5s cubic-bezier(0.2, 0.8, 0.4, 1)';
+            ball.style.top = '55px'; // 당첨 숫자 칸 반경으로 이동
+        }, 3500);
+
+        // 최종 결과 출력
+        setTimeout(() => {
+            checkResult(winNumber);
             isSpinning = false;
             document.getElementById('spin-btn').disabled = false;
-        }, 4000);
+        }, 5000);
     });
 
     // 5. 결과 판독
@@ -292,25 +332,34 @@
         let matched = [];
         
         selectedBets.forEach(bet => {
-            if (!isNaN(bet)) { // 숫자 배팅
-                if (parseInt(bet) === winNumber) matched.push(`숫자 ${bet}`);
-            } else { // 아웃사이드 배팅
-                if (winNumber !== 0) {
-                    if (bet === 'red' && isRed) matched.push("Red");
-                    if (bet === 'black' && !isRed) matched.push("Black");
-                    if (bet === 'even' && winNumber % 2 === 0) matched.push("짝수 (Even)");
-                    if (bet === 'odd' && winNumber % 2 !== 0) matched.push("홀수 (Odd)");
-                }
+            // 단일 숫자
+            if (!isNaN(bet) && parseInt(bet) === winNumber) {
+                matched.push(`숫자 ${bet}`);
+            } 
+            // 0이 아닐 때만 적용되는 외부 배팅
+            else if (winNumber !== 0) {
+                if (bet === 'red' && isRed) matched.push("Red");
+                if (bet === 'black' && !isRed) matched.push("Black");
+                if (bet === 'even' && winNumber % 2 === 0) matched.push("Even");
+                if (bet === 'odd' && winNumber % 2 !== 0) matched.push("Odd");
+                if (bet === '1-18' && winNumber >= 1 && winNumber <= 18) matched.push("1 to 18");
+                if (bet === '19-36' && winNumber >= 19 && winNumber <= 36) matched.push("19 to 36");
+                if (bet === '1st12' && winNumber >= 1 && winNumber <= 12) matched.push("1st 12");
+                if (bet === '2nd12' && winNumber >= 13 && winNumber <= 24) matched.push("2nd 12");
+                if (bet === '3rd12' && winNumber >= 25 && winNumber <= 36) matched.push("3rd 12");
+                if (bet === 'col1' && winNumber % 3 === 1) matched.push("2 to 1 (하단)");
+                if (bet === 'col2' && winNumber % 3 === 2) matched.push("2 to 1 (중단)");
+                if (bet === 'col3' && winNumber % 3 === 0) matched.push("2 to 1 (상단)");
             }
         });
 
         const winDisplay = document.getElementById('win-display');
         if (matched.length > 0) {
-            winDisplay.textContent = matched.join(', ') + ' 적중!';
-            winDisplay.style.color = '#00ff00';
+            winDisplay.textContent = matched.join(', ') + ' 적중';
+            winDisplay.style.color = '#0055ff'; // 적중 시 파란색 텍스트
         } else {
             winDisplay.textContent = '맞춘 배팅이 없습니다.';
-            winDisplay.style.color = '#ffffff';
+            winDisplay.style.color = '#000000';
         }
     }
 
