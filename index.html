@@ -92,14 +92,13 @@
             box-sizing: border-box;
         }
         
-        /* 족보 (배팅 보드) 스타일 - 크기 및 간격 확장 */
         .board {
             display: grid;
             grid-template-columns: 80px repeat(12, 1fr) 80px;
-            grid-template-rows: repeat(5, 70px); /* 높이 증가 */
-            gap: 10px; /* 격자선 히트박스와 정확히 일치하는 크기 */
+            grid-template-rows: repeat(5, 70px);
+            gap: 10px;
             width: 100%;
-            background: #888888; /* 격자선 배경색 */
+            background: #888888;
             border: 4px solid #888888;
             border-radius: 8px;
             position: relative;
@@ -110,7 +109,7 @@
             justify-content: center;
             align-items: center;
             font-weight: bold;
-            font-size: 18px; /* 글씨 크기 증가 */
+            font-size: 18px;
             cursor: pointer;
             user-select: none;
             box-sizing: border-box;
@@ -119,7 +118,6 @@
         }
         .cell:hover { opacity: 0.9; }
         
-        /* 외부 배팅 호버 및 마우스 올렸을 때 숫자 색상 변경 */
         .cell.hover-active {
             background-color: #ffeaa7 !important;
             color: #000 !important;
@@ -128,13 +126,11 @@
             z-index: 2;
         }
         
-        /* 색상 클래스 */
         .red { background-color: #d90000; color: white; }
         .black { background-color: #222222; color: white; }
         .green { background-color: #008000; color: white; }
         .special { background-color: #eaeaea; color: #333; }
 
-        /* 카지노 칩 스타일 (조금 더 크게) */
         @keyframes placeChip {
             0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
@@ -151,7 +147,34 @@
             pointer-events: none; 
             z-index: 10;
             animation: placeChip 0.2s ease-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
+        
+        /* 칩 내부 점 장식 */
+        .chip::after {
+            content: '';
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-sizing: border-box;
+        }
+        
+        /* 정산 내역 스타일 */
+        .summary-box {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ccc;
+            font-size: 16px;
+            display: inline-block;
+            text-align: left;
+        }
+        .summary-line { margin-bottom: 5px; }
+        .profit { color: #d90000; font-size: 22px; font-weight: bold; }
+        .loss { color: #0055ff; font-size: 22px; font-weight: bold; }
+        .even { color: #555555; font-size: 22px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -173,12 +196,11 @@
     </div>
 
     <div class="right-panel">
-        <div class="board" id="board">
-            </div>
+        <div class="board" id="board"></div>
 
         <div class="info-box">
             <h3 style="margin:0 0 10px 0;">맞춘 배팅 및 배당</h3>
-            <div id="win-display" style="font-size: 18px; line-height: 1.5; font-weight: bold;">-</div>
+            <div id="win-display" style="font-size: 16px; line-height: 1.5; font-weight: bold;">대기 중...</div>
         </div>
     </div>
 </div>
@@ -191,7 +213,6 @@
     let totalWheelRotation = 0;
     let isSpinning = false;
 
-    // 1. 배팅 보드 생성
     function initBoard() {
         const board = document.getElementById('board');
         
@@ -201,9 +222,7 @@
             cell.style.gridArea = gridArea;
             cell.textContent = text;
             
-            // 외부 배팅(아웃사이드)과 0은 개별 클릭 이벤트 적용
             cell.addEventListener('click', () => toggleOutsideBet(cell, betId, desc, mult));
-            // 0 전용 호버 효과
             if (betId === '0') {
                 cell.addEventListener('mouseenter', () => cell.classList.add('hover-active'));
                 cell.addEventListener('mouseleave', () => cell.classList.remove('hover-active'));
@@ -211,10 +230,8 @@
             board.appendChild(cell);
         }
 
-        // 0 구역
         createCell('0', '0', '1 / 1 / 4 / 2', 'green', 'outside', '숫자 0', 36);
 
-        // 1~36 숫자 구역 생성 (아이디 부여)
         const rows = [
             [3,6,9,12,15,18,21,24,27,30,33,36],
             [2,5,8,11,14,17,20,23,26,29,32,35],
@@ -225,14 +242,13 @@
                 const color = redNumbers.includes(num) ? 'red' : 'black';
                 const cell = document.createElement('div');
                 cell.className = `cell ${color}`;
-                cell.id = `cell-${num}`; // 하이라이트 제어를 위한 ID
+                cell.id = `cell-${num}`;
                 cell.style.gridArea = `${rowIndex + 1} / ${colIndex + 2} / ${rowIndex + 2} / ${colIndex + 3}`;
                 cell.textContent = num;
                 board.appendChild(cell);
             });
         });
 
-        // 숫자 구역 전용 투명 오버레이 (마우스 움직임 및 클릭 추적)
         const overlay = document.createElement('div');
         overlay.id = 'number-overlay';
         overlay.style.gridArea = '1 / 2 / 4 / 14';
@@ -245,7 +261,6 @@
         overlay.addEventListener('mouseleave', clearHighlights);
         board.appendChild(overlay);
 
-        // 아웃사이드 배팅 구역
         createCell('2 to 1', 'col3', '1 / 14 / 2 / 15', 'special', 'outside', '2 to 1 (상단)', 3);
         createCell('2 to 1', 'col2', '2 / 14 / 3 / 15', 'special', 'outside', '2 to 1 (중단)', 3);
         createCell('2 to 1', 'col1', '3 / 14 / 4 / 15', 'special', 'outside', '2 to 1 (하단)', 3);
@@ -262,7 +277,6 @@
         createCell('19 to 36', '19-36', '5 / 12 / 6 / 14', 'special', 'outside', '19 to 36', 2);
     }
 
-    // 외부 배팅 처리
     function toggleOutsideBet(cell, betId, desc, mult) {
         if (isSpinning) return;
         if (placedBets.has(betId)) {
@@ -279,18 +293,15 @@
         }
     }
 
-    // 숫자를 구하는 헬퍼 함수
     const getNum = (row, col) => (col + 1) * 3 - row;
     let currentHoverId = null;
 
-    // 1~36구역의 움직임 및 클릭 이벤트 (정확한 Gap 크기 기반 히트박스)
     function handleOverlayEvent(e, isClick) {
         if (isSpinning) return;
         
         const overlay = e.currentTarget;
         const rect = overlay.getBoundingClientRect();
         
-        // CSS 상의 gap 크기 (10px)와 동일하게 맵핑
         const gap = 10; 
         const cellW = (rect.width - 11 * gap) / 12;
         const cellH = (rect.height - 2 * gap) / 3;
@@ -298,30 +309,24 @@
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        // 마우스가 위치한 열(0~11)과 행(0~2)을 수식으로 완벽히 추출
         let col = Math.floor(x / (cellW + gap));
         let row = Math.floor(y / (cellH + gap));
         
-        // 경계선 보정
         if(col < 0) col = 0; if(col > 11) col = 11;
         if(row < 0) row = 0; if(row > 2) row = 2;
 
-        // 해당 칸 내에서의 로컬 좌표
         const localX = x - (col * (cellW + gap));
         const localY = y - (row * (cellH + gap));
 
-        // 로컬 좌표가 실제 칸 너비를 넘어서면 무조건 Gap(격자선) 위에 있는 것임
         let inGapX = localX > cellW;
         let inGapY = localY > cellH;
 
-        // 가장자리 바깥 예외 처리
         if (col === 11) inGapX = false;
         if (row === 2) inGapY = false;
 
         let betType, betId, nums, cx, cy, mult;
 
         if (inGapX && inGapY) {
-            // 코너 배팅 (모서리)
             betType = 'corner';
             betId = `corner_${row}_${col}`;
             nums = [getNum(row, col), getNum(row+1, col), getNum(row, col+1), getNum(row+1, col+1)].sort((a,b)=>a-b);
@@ -329,7 +334,6 @@
             cy = (row * (cellH + gap)) + cellH + (gap / 2);
             mult = 9;
         } else if (inGapX) {
-            // 스플릿 배팅 (세로 선)
             betType = 'split';
             betId = `vsplit_${row}_${col}`;
             nums = [getNum(row, col), getNum(row, col+1)].sort((a,b)=>a-b);
@@ -337,7 +341,6 @@
             cy = (row * (cellH + gap)) + (cellH / 2);
             mult = 18;
         } else if (inGapY) {
-            // 스플릿 배팅 (가로 선)
             betType = 'split';
             betId = `hsplit_${row}_${col}`;
             nums = [getNum(row, col), getNum(row+1, col)].sort((a,b)=>a-b);
@@ -345,7 +348,6 @@
             cy = (row * (cellH + gap)) + cellH + (gap / 2);
             mult = 18;
         } else {
-            // 단일 숫자 (칸 중앙)
             betType = 'straight';
             betId = `straight_${row}_${col}`;
             nums = [getNum(row, col)];
@@ -354,8 +356,7 @@
             mult = 36;
         }
 
-        // 마우스 호버 시 대상 숫자들에 시각적 효과 (노란색 하이라이트)
-        if (isClick && currentHoverId !== betId) {
+        if (!isClick && currentHoverId !== betId) {
             clearHighlights();
             nums.forEach(n => {
                 const cell = document.getElementById(`cell-${n}`);
@@ -364,7 +365,6 @@
             currentHoverId = betId;
         }
 
-        // 클릭 시 칩 놓기/빼기
         if (isClick) {
             if (placedBets.has(betId)) {
                 placedBets.get(betId).element.remove();
@@ -391,7 +391,6 @@
         currentHoverId = null;
     }
 
-    // 룰렛 휠 디자인
     function drawWheel() {
         const canvas = document.getElementById('wheel');
         const ctx = canvas.getContext('2d');
@@ -439,13 +438,18 @@
         ctx.stroke();
     }
 
-    // 스핀 및 결과 확인
     document.getElementById('spin-btn').addEventListener('click', () => {
         if (isSpinning) return;
+        
+        if (placedBets.size === 0) {
+            alert('먼저 칩을 올려 배팅해주세요!');
+            return;
+        }
+
         isSpinning = true;
         document.getElementById('spin-btn').disabled = true;
         document.getElementById('result-display').textContent = '회전 중...';
-        document.getElementById('win-display').textContent = '-';
+        document.getElementById('win-display').innerHTML = '회전 중...';
 
         const wheel = document.getElementById('wheel');
         const ballContainer = document.getElementById('ball-container');
@@ -478,6 +482,7 @@
         }, 5000);
     });
 
+    // 배팅 결과 계산 및 출력 로직 수정
     function checkResult(winNumber) {
         const isRed = redNumbers.includes(winNumber);
         const colorText = winNumber === 0 ? "Green" : (isRed ? "Red" : "Black");
@@ -485,36 +490,60 @@
         document.getElementById('result-display').textContent = `${winNumber} (${colorText})`;
         
         let matched = [];
-        let totalWinMessage = "";
+        let totalWinReturn = 0;            // 돌려받은 칩 총계 (배당금 합계)
+        let totalBetCount = placedBets.size; // 내가 배팅한 칩 개수
         
         placedBets.forEach(bet => {
+            let isWin = false;
             if (bet.type === 'inside' && bet.numbers.includes(winNumber)) {
-                matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
+                isWin = true;
             } else if (bet.type === 'outside') {
                 const id = bet.betId;
-                if (id === '0' && winNumber === 0) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
+                if (id === '0' && winNumber === 0) isWin = true;
                 if (winNumber !== 0) {
-                    if (id === 'red' && isRed) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === 'black' && !isRed) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === 'even' && winNumber % 2 === 0) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === 'odd' && winNumber % 2 !== 0) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === '1-18' && winNumber >= 1 && winNumber <= 18) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === '19-36' && winNumber >= 19 && winNumber <= 36) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === '1st12' && winNumber >= 1 && winNumber <= 12) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === '2nd12' && winNumber >= 13 && winNumber <= 24) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === '3rd12' && winNumber >= 25 && winNumber <= 36) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === 'col1' && winNumber % 3 === 1) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === 'col2' && winNumber % 3 === 2) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
-                    if (id === 'col3' && winNumber % 3 === 0) matched.push(`• ${bet.desc} <span style="color:#0055ff;">(${bet.mult}배)</span>`);
+                    if (id === 'red' && isRed) isWin = true;
+                    if (id === 'black' && !isRed) isWin = true;
+                    if (id === 'even' && winNumber % 2 === 0) isWin = true;
+                    if (id === 'odd' && winNumber % 2 !== 0) isWin = true;
+                    if (id === '1-18' && winNumber >= 1 && winNumber <= 18) isWin = true;
+                    if (id === '19-36' && winNumber >= 19 && winNumber <= 36) isWin = true;
+                    if (id === '1st12' && winNumber >= 1 && winNumber <= 12) isWin = true;
+                    if (id === '2nd12' && winNumber >= 13 && winNumber <= 24) isWin = true;
+                    if (id === '3rd12' && winNumber >= 25 && winNumber <= 36) isWin = true;
+                    if (id === 'col1' && winNumber % 3 === 1) isWin = true;
+                    if (id === 'col2' && winNumber % 3 === 2) isWin = true;
+                    if (id === 'col3' && winNumber % 3 === 0) isWin = true;
                 }
+            }
+            
+            // 배팅이 적중했다면 환급금 합산
+            if (isWin) {
+                matched.push(`• ${bet.desc} <span style="color:#0055ff;">(+${bet.mult} 환급)</span>`);
+                totalWinReturn += bet.mult;
             }
         });
 
+        // 최종 순수익 계산 (돌려받은 칩 - 배팅에 사용한 전체 칩)
+        const netProfit = totalWinReturn - totalBetCount;
+        
+        let summaryHTML = `<div class="summary-box">`;
+        summaryHTML += `<div class="summary-line">전체 배팅: <strong>-${totalBetCount}개</strong></div>`;
+        summaryHTML += `<div class="summary-line">적중 환급: <strong>+${totalWinReturn}개</strong></div>`;
+        
+        if (netProfit > 0) {
+            summaryHTML += `<div class="summary-line profit">최종 결과: ${netProfit} 이득</div>`;
+        } else if (netProfit === 0) {
+            summaryHTML += `<div class="summary-line even">최종 결과: 본전</div>`;
+        } else {
+            summaryHTML += `<div class="summary-line loss">최종 결과: ${netProfit} 손실</div>`;
+        }
+        summaryHTML += `</div>`;
+
         const winDisplay = document.getElementById('win-display');
         if (matched.length > 0) {
-            winDisplay.innerHTML = matched.join('<br>') + '<br><br><span style="color:#d90000; font-size: 22px;">적중</span>';
+            winDisplay.innerHTML = matched.join('<br>') + summaryHTML;
         } else {
-            winDisplay.textContent = '맞춘 배팅이 없습니다.';
+            winDisplay.innerHTML = '적중한 배팅이 없습니다.<br>' + summaryHTML;
         }
     }
 
